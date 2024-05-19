@@ -69,7 +69,7 @@ public class TikTokHandler(
             // var error = await response.Content.ReadAsStringAsync(ct);
             // await botClient.SendTextMessageAsync(
             //     message.Chat.Id,
-            //     $"Ахуеть тиктокич кинули не могу скачать:\n{error}",
+            //     $"Error: \n{error}",
             //     replyToMessageId: message.MessageId,
             //     cancellationToken: ct);
         }
