@@ -1,0 +1,13 @@
+{
+  "Information": [
+    "AwsTeleBot"
+  ],
+  "profile": "default",
+  "region": "us-east-2",
+  "configuration": "Release",
+  "function-runtime": "dotnet8",
+  "function-memory-size": 128,
+  "function-timeout": 15,
+  "function-handler": "TeleBot.AwsLambdaAOT",
+  "msbuild-parameters": "--self-contained true"
+}
