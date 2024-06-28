@@ -2,20 +2,34 @@
 
 namespace TeleBot.AwsLambdaAOT.Responses;
 
-public class InstaResponse
+public class FastDlRequest
 {
-    [JsonPropertyName("data")]
-    public InstaData Data { get; set; } = null!;
+    [JsonPropertyName("url")]
+    public string Url { get; set; } = null!;
+
+    [JsonPropertyName("ts")]
+    public long Ts { get; set; }
+
+    [JsonPropertyName("_ts")]
+    public long _Ts { get; set; }
+
+    [JsonPropertyName("_tsc")]
+    public long _Tsc { get; set; }
+    
+    [JsonPropertyName("_s")]
+    public string _S { get; set; } = null!;
 }
 
-public class InstaData
+public class FastDlResponse
 {
-    [JsonPropertyName("xdt_shortcode_media")]
-    public ShortCodeMedia ShortCodeMedia { get; set; } = null!;
+    [JsonPropertyName("url")]
+    public FastDlUrlResponse[] Url { get; set; } = null!;
+
+   
 }
 
-public class ShortCodeMedia
+public class FastDlUrlResponse
 {
-    [JsonPropertyName("video_url")]
-    public string VideoUrl { get; set; } = null!;
+    [JsonPropertyName("url")]
+    public string Url { get; set; } = null!;
 }
