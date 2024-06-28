@@ -122,13 +122,13 @@ public class Function
 [JsonSerializable(typeof(TikWmResponse))]
 [JsonSerializable(typeof(TikWmData))]
 [JsonSerializable(typeof(TikWmData))]
-[JsonSerializable(typeof(InstaResponse))]
-[JsonSerializable(typeof(InstaData))]
-[JsonSerializable(typeof(ShortCodeMedia))]
 [JsonSerializable(typeof(YoutubeUrlRequest))]
 [JsonSerializable(typeof(YoutubeUrlResponse))]
 [JsonSerializable(typeof(APIGatewayProxyRequest))]
 [JsonSerializable(typeof(APIGatewayProxyResponse))]
+[JsonSerializable(typeof(FastDlRequest))]
+[JsonSerializable(typeof(FastDlResponse))]
+[JsonSerializable(typeof(FastDlUrlResponse))]
 public partial class LambdaJsonContext : JsonSerializerContext
 {
 }
