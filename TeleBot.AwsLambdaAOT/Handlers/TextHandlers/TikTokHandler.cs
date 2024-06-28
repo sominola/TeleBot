@@ -12,7 +12,7 @@ public class TikTokHandler(
 ) : IMessageHandler
 {
     private readonly HttpClient _tikWmClient = clientFactory.CreateClient("Tikwm");
-    private readonly HttpClient _prostoyClient = clientFactory.CreateClient("Prostoy");
+    private readonly HttpClient _defaultHttpClient = clientFactory.CreateClient("Default");
 
     public async Task Handle(ITeleBot botClient, Message message, CancellationToken ct = default)
     {
@@ -30,7 +30,7 @@ public class TikTokHandler(
             if (result.Data.Duration.HasValue && result.Data.Duration > 0)
             {
                 var videoUrl = result.Data.Play;
-                using var videoResponse = await _prostoyClient.GetAsync(videoUrl, ct);
+                using var videoResponse = await _defaultHttpClient.GetAsync(videoUrl, ct);
                 var videoExtension = MimeTypeMap.GetExtension(videoResponse.Content.Headers.ContentType!.MediaType);
                 await using var videoStream = await videoResponse.Content.ReadAsStreamAsync(ct);
 
