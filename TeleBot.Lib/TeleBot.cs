@@ -6,9 +6,10 @@ public interface ITeleBot
 {
     Task<TeleResult> GetMe(CancellationToken ct = default);
 
-    Task<TeleResult> SendVideo(
+    Task<TeleResult> SendPhoto(
         long chatId,
-        string videoUrl,
+        Stream stream,
+        string fileName,
         bool? hasSpoiler = default,
         bool? disableNotification = default,
         int? replyToMessageId = default,
@@ -37,21 +38,28 @@ public class TeleBot : ITeleBot
     public async Task<TeleResult> GetMe(CancellationToken ct = default) =>
         await _teleClient.Get<TeleResult>("getMe", ct);
 
-    public async Task<TeleResult> SendVideo(
+    public async Task<TeleResult> SendPhoto(
         long chatId,
-        string videoUrl,
+        Stream stream,
+        string fileName,
         bool? hasSpoiler = default,
         bool? disableNotification = default,
         int? replyToMessageId = default,
-        CancellationToken ct = default) =>
-        await _teleClient.Post<Document, TeleResult>("sendVideo", new Document
+        CancellationToken ct = default)
+    {
+        var keys = new Dictionary<string, string>
         {
-            ChatId = chatId,
-            Video = videoUrl,
-            HasSpoiler = hasSpoiler,
-            DisableNotification = disableNotification,
-            ReplyToMessageId = replyToMessageId,
-        }, ct);
+            { "chat_id", chatId.ToString() },
+            { "has_spoiler", hasSpoiler.GetValueOrDefault().ToString() },
+            { "disable_notification", disableNotification.GetValueOrDefault().ToString() },
+            { "reply_to_message_id", replyToMessageId.GetValueOrDefault().ToString() }
+        };
+
+        var file = new ValueTuple<Stream, string, string>(stream, fileName, "photo");
+
+        return await _teleClient.PostMultipartContent<TeleResult>("sendPhoto", keys, file, ct);
+    }
+
 
     public async Task<TeleResult> SendVideo(
         long chatId,

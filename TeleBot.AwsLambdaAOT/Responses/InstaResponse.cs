@@ -32,4 +32,16 @@ public class FastDlUrlResponse
 {
     [JsonPropertyName("url")]
     public string Url { get; set; } = null!;
+    
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = null!;
+    
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = null!;
+    
+    [JsonPropertyName("ext")]
+    public string Ext { get; set; } = null!;
+    
+    [JsonPropertyName("quality")]
+    public long? Quality { get; set; }
 }
