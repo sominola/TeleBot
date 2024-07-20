@@ -29,7 +29,9 @@ public class YoutubeHandler(ILogger logger, IHttpClientFactory factory, IOptions
 
             var videoUrl = youtubeUrlResponse!.Url;
             using var videoResponse = await _defaultHttpClient.GetAsync(videoUrl, ct);
-            var videoExtension = MimeTypeMap.GetExtension(videoResponse.Content.Headers.ContentType!.MediaType);
+            var videoExtension = ".mp4";
+            if (videoResponse.Content.Headers.ContentType is not null)
+                videoExtension = MimeTypeMap.GetExtension(videoResponse.Content.Headers.ContentType!.MediaType);
             await using var videoStream = await videoResponse.Content.ReadAsStreamAsync(ct);
 
             await botClient.SendVideo(
