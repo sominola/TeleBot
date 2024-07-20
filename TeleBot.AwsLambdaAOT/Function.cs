@@ -126,9 +126,7 @@ public class Function
 [JsonSerializable(typeof(YoutubeUrlResponse))]
 [JsonSerializable(typeof(APIGatewayProxyRequest))]
 [JsonSerializable(typeof(APIGatewayProxyResponse))]
-[JsonSerializable(typeof(FastDlRequest))]
-[JsonSerializable(typeof(FastDlResponse))]
-[JsonSerializable(typeof(FastDlUrlResponse))]
+[JsonSerializable(typeof(InstsaResponse))]
 public partial class LambdaJsonContext : JsonSerializerContext
 {
 }
