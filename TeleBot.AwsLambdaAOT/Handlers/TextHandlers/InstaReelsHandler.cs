@@ -2,10 +2,8 @@
 using System.Net.Mime;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MimeTypes;
 using TeleBot.AwsLambdaAOT.Options;
 using TeleBot.AwsLambdaAOT.Responses;
 using TeleBot.Lib;
@@ -29,18 +27,43 @@ public partial class InstaReelsHandler(
         using var response = await _defaultHttpClient.SendAsync(requestMessage, ct);
         if (response.IsSuccessStatusCode)
         {
-            var instaResponse = await response.Content
-                .ReadFromJsonAsync(LambdaJsonContext.Default.InstsaResponse, ct);
+            var instaJobResponse = await response.Content
+                .ReadFromJsonAsync(LambdaJsonContext.Default.InstaJobResponse, ct);
 
-            if (instaResponse is null)
+            if (instaJobResponse is null)
                 throw new Exception("InstaResponse is null, return");
 
-            var url = GetUrl(instaResponse);
-            logger.LogInformation("URL: {Url}", url);
+            var url = string.Empty;
+            var retry = 15;
+            var currentRetry = 0;
+            while (true)
+            {
+                if (currentRetry == retry)
+                    throw new Exception("InstaResponse url timeout");
+                
+                var jobStatus = await _defaultHttpClient.GetFromJsonAsync(
+                    $"https://app.publer.io/api/v1/job_status/{instaJobResponse.JobId}", 
+                    LambdaJsonContext.Default.InstaResponse, 
+                    cancellationToken: ct);
+
+                if (jobStatus!.Status == "complete")
+                {
+                    url = jobStatus.Payload?.FirstOrDefault()?.Path;
+                    if (string.IsNullOrEmpty(url))
+                        throw new Exception("InstaUrl is null or empty");
+                    break;
+                }
+
+                currentRetry++;
+                await Task.Delay(TimeSpan.FromSeconds(1), ct);
+            }
+
+            // logger.LogInformation("URL: {Url}", url);
 
             using var contentResponse = await _defaultHttpClient.GetAsync(url, ct);
-            var extension = MimeTypeMap.GetExtension(contentResponse.Content.Headers.ContentType!.MediaType);
-            var isVideo = extension.Contains("mp4");
+            var fileName = contentResponse.Content.Headers.ContentDisposition!.FileName;
+            var ext = Path.GetExtension(fileName);
+            var isVideo = ext!.Contains("mp4");
             await using var stream = await contentResponse.Content.ReadAsStreamAsync(ct);
 
             if (isVideo)
@@ -48,7 +71,7 @@ public partial class InstaReelsHandler(
                 await botClient.SendVideo(
                     message.Chat.Id,
                     stream,
-                    $"{Guid.NewGuid()}{extension}",
+                    $"{Guid.NewGuid()}{ext}",
                     hasSpoiler: false,
                     disableNotification: true,
                     replyToMessageId: message.MessageId,
@@ -59,7 +82,7 @@ public partial class InstaReelsHandler(
                 await botClient.SendPhoto(
                     message.Chat.Id,
                     stream,
-                    $"{Guid.NewGuid()}{extension}",
+                    $"{Guid.NewGuid()}{ext}",
                     hasSpoiler: false,
                     disableNotification: true,
                     replyToMessageId: message.MessageId,
@@ -69,49 +92,38 @@ public partial class InstaReelsHandler(
         }
     }
 
-    private static string GetUrl(InstsaResponse response)
-    {
-        var match = MyRegex().Match(response.Data);
-
-        if (!match.Success) throw new Exception("Cannot get insta url");
-        var url = match.Groups[1].Value.Replace("amp;", "");
-        return url;
-
-    }
-
     private HttpRequestMessage BuildMessage(string url)
     {
-        var dic = new Dictionary<string, string>()
+        var obj = new InstaRequest
         {
-            { "q", url },
-            { "t", "media" },
-            { "lang", "ru" },
+            Iphone = false,
+            Url = url,
         };
 
-        var req = new HttpRequestMessage(HttpMethod.Post, options.Value.InstagramApiUrl)
+        var json = JsonSerializer.Serialize(obj, LambdaJsonContext.Default.InstaRequest);
+        var req = new HttpRequestMessage(HttpMethod.Post, options.Value.InstagramApiUrl + "/hooks/media")
         {
-            Content = new FormUrlEncodedContent(dic)
+            Content = new StringContent(json, Encoding.UTF8, MediaTypeNames.Application.Json),
         };
 
-        req.Headers.Add("Accept", "application/json, text/plain, */*");
-        req.Headers.Add("Accept-Encoding", "gzip, deflate, br, zstd");
-        req.Headers.Add("Accept-Language", "uk-UA,uk;q=0.9,ru-UA;q=0.8,ru;q=0.7,en-US;q=0.6,en;q=0.5");
-        req.Headers.Add("Cookie", "uid=a8d272e5c2c41435; adsAfterSearch=67; adsPopupClick=79; adsForm=30");
-        req.Headers.Add("Origin", "https://saveig.app");
-        req.Headers.Add("Referer", "https://saveig.app/");
-        req.Headers.Add("Priority", "nu=1, i");
-        req.Headers.Add("Sec-Ch-Ua", "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Google Chrome\";v=\"126\"");
-        req.Headers.Add("Sec-Ch-Ua-Platform", "\"Windows\"");
-        req.Headers.Add("Sec-Fetch-Dest", "empty");
-        req.Headers.Add("Sec-Fetch-Mode", "cors");
-        req.Headers.Add("Sec-Fetch-Site", "same-origin");
-        req.Headers.Add("User-Agent",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36");
+        _defaultHttpClient.DefaultRequestHeaders.Add("Accept", "application/json, text/plain, */*");
+        _defaultHttpClient.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate, br, zstd");
+        _defaultHttpClient.DefaultRequestHeaders.Add("Accept-Language",
+            "uk-UA,uk;q=0.9,ru-UA;q=0.8,ru;q=0.7,en-US;q=0.6,en;q=0.5");
+        _defaultHttpClient.DefaultRequestHeaders.Add("If-None-Match", "W/\"71786219b00b25d7225fe65316a84acf\"");
+        _defaultHttpClient.DefaultRequestHeaders.Add("Origin", "https://publer.io");
+        _defaultHttpClient.DefaultRequestHeaders.Add("Referer", "https://publer.io/");
+        _defaultHttpClient.DefaultRequestHeaders.Add("Sec-CH-UA",
+            "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Google Chrome\";v=\"128\"");
+        _defaultHttpClient.DefaultRequestHeaders.Add("Sec-CH-UA-Mobile", "?0");
+        _defaultHttpClient.DefaultRequestHeaders.Add("Sec-CH-UA-Platform", "\"Windows\"");
+        _defaultHttpClient.DefaultRequestHeaders.Add("Sec-Fetch-Dest", "empty");
+        _defaultHttpClient.DefaultRequestHeaders.Add("Sec-Fetch-Mode", "cors");
+        _defaultHttpClient.DefaultRequestHeaders.Add("Sec-Fetch-Site", "same-site");
+        _defaultHttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36");
 
 
         return req;
     }
-
-    [GeneratedRegex("href=\"(https://[^\"]+)\"")]
-    private static partial Regex MyRegex();
 }
