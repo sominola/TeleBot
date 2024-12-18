@@ -10,4 +10,10 @@
     <ItemGroup>
       <ProjectReference Include="..\TeleBot.AwsLambdaAOT\TeleBot.AwsLambdaAOT.csproj" />
     </ItemGroup>
+
+    <ItemGroup>
+      <None Update="teleMessage.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
 </Project>

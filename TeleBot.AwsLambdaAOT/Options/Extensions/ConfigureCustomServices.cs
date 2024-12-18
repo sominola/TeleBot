@@ -11,8 +11,6 @@ public static class ConfigureCustomServices
         services.AddScoped<TextMessageHandler>();
         services.AddScoped<InstaReelsHandler>();
         services.AddScoped<TikTokHandler>();
-        services.AddScoped<YoutubeHandler>();
-        
 
         return services;
     }

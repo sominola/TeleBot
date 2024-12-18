@@ -9,10 +9,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using TeleBot.AwsLambdaAOT.Extensions;
 using TeleBot.AwsLambdaAOT.Handlers;
 using TeleBot.AwsLambdaAOT.Options;
-using TeleBot.AwsLambdaAOT.Responses;
 using TeleBot.AwsLambdaAOT.Options.Extensions;
+using TeleBot.AwsLambdaAOT.Responses;
 using TeleBot.Lib.Extensions;
 using TeleBot.Lib.Models;
 using TeleBot.Lib.Models.Enums;
@@ -21,7 +22,7 @@ namespace TeleBot.AwsLambdaAOT;
 
 public class Function
 {
-    public static async Task Main()
+    private static async Task Main()
     {
         var handler = FunctionHandler;
         await LambdaBootstrapBuilder.Create(handler,
@@ -62,9 +63,8 @@ public class Function
         }
 
         logger.LogInformation("Try deserialize body to <Message>: {Body}", body);
-        // logger.LogInformation("Try deserialize body to <Message>");
 
-        var updateEvent = JsonSerializer.Deserialize(body, typeof(Update), TeleGenerationContext.Default) as Update;
+        var updateEvent = JsonSerializer.Deserialize(body!, typeof(Update), TeleGenerationContext.Default) as Update;
 
         if (updateEvent?.Message is null)
         {
@@ -118,18 +118,17 @@ public class Function
     }
 }
 
+[JsonSerializable(typeof(APIGatewayProxyRequest))]
+[JsonSerializable(typeof(APIGatewayProxyResponse))]
 [JsonSerializable(typeof(string))]
 [JsonSerializable(typeof(TikWmResponse))]
 [JsonSerializable(typeof(TikWmData))]
-[JsonSerializable(typeof(TikWmData))]
 [JsonSerializable(typeof(YoutubeUrlRequest))]
 [JsonSerializable(typeof(YoutubeUrlResponse))]
-[JsonSerializable(typeof(APIGatewayProxyRequest))]
-[JsonSerializable(typeof(APIGatewayProxyResponse))]
-[JsonSerializable(typeof(InstaRequest))]
-[JsonSerializable(typeof(InstaJobResponse))]
-[JsonSerializable(typeof(InstaResponse))]
-[JsonSerializable(typeof(InstaPayloadResponse))]
+[JsonSerializable(typeof(InstagramMediaResponse))]
+[JsonSerializable(typeof(InstagramData))]
+[JsonSerializable(typeof(InstagramXdt))]
+[JsonSerializable(typeof(YoutubeSessionResponse))]
 public partial class LambdaJsonContext : JsonSerializerContext
 {
 }

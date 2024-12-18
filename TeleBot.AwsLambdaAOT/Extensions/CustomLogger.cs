@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
-namespace TeleBot.AwsLambdaAOT;
+namespace TeleBot.AwsLambdaAOT.Extensions;
 
 public class CustomLogger(ILambdaLogger logger) : ILogger
 {
