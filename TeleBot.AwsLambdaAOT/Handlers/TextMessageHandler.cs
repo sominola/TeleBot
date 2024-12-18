@@ -11,7 +11,6 @@ public record PatternAndHandler(HashSet<string> Patterns, IMessageHandler Handle
 public class TextMessageHandler(
     InstaReelsHandler instaReelsHandler,
     TikTokHandler tikTokHandler,
-    YoutubeHandler youtubeHandler,
     ILogger logger
 )
 {
@@ -19,9 +18,8 @@ public class TextMessageHandler(
     {
         var handlers = new List<PatternAndHandler>
         {
-            new(["https://vm.tiktok.com", "https://www.tiktok.com", "https://m.tiktok.com", "https://vm.tiktok.com"], tikTokHandler),
-            new(["https://www.instagram.com"], instaReelsHandler),
-            new(["https://www.youtube.com", "https://youtu.be", "https://youtube.com"], youtubeHandler),
+            new(["https://vm.tiktok.com", "https://www.tiktok.com", "https://m.tiktok.com",], tikTokHandler),
+            new(["https://www.instagram.com",], instaReelsHandler),
         };
 
 

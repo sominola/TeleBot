@@ -2,8 +2,11 @@
 using System.Net.Mime;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MimeTypes;
+using TeleBot.AwsLambdaAOT.Extensions;
 using TeleBot.AwsLambdaAOT.Options;
 using TeleBot.AwsLambdaAOT.Responses;
 using TeleBot.Lib;
@@ -13,8 +16,7 @@ namespace TeleBot.AwsLambdaAOT.Handlers.TextHandlers;
 
 public partial class InstaReelsHandler(
     IHttpClientFactory httpClientFactory,
-    ILogger logger,
-    IOptions<AppOptions> options
+    ILogger logger
 ) : IMessageHandler
 {
     private readonly HttpClient _defaultHttpClient = httpClientFactory.CreateClient("Default");
@@ -22,108 +24,109 @@ public partial class InstaReelsHandler(
     public async Task Handle(ITeleBot botClient, Message message, CancellationToken ct = default)
     {
         logger.LogInformation("Processing Insta message");
-        using var requestMessage = BuildMessage(message.Text!);
 
-        using var response = await _defaultHttpClient.SendAsync(requestMessage, ct);
-        if (response.IsSuccessStatusCode)
+        var reelsId = ExtractReelId(message.Text!);
+        if (string.IsNullOrEmpty(reelsId))
         {
-            var instaJobResponse = await response.Content
-                .ReadFromJsonAsync(LambdaJsonContext.Default.InstaJobResponse, ct);
+            logger.LogWarning("ReelsId is null or empty");
+            return;
+        }
 
-            if (instaJobResponse is null)
-                throw new Exception("InstaResponse is null, return");
+        logger.LogInformation("ReelsId: {reelsId}", reelsId);
 
-            var url = string.Empty;
-            var retry = 15;
-            var currentRetry = 0;
-            while (true)
-            {
-                if (currentRetry == retry)
-                    throw new Exception("InstaResponse url timeout");
-                
-                var jobStatus = await _defaultHttpClient.GetFromJsonAsync(
-                    $"https://app.publer.io/api/v1/job_status/{instaJobResponse.JobId}", 
-                    LambdaJsonContext.Default.InstaResponse, 
-                    cancellationToken: ct);
+        using var mediaIdRequest = GetMediaIdRequest(reelsId);
+        using var mediaIdResponse = await _defaultHttpClient.SendAsync(mediaIdRequest, ct);
+        if (!mediaIdResponse.IsSuccessStatusCode)
+        {
+            var responseText = await mediaIdResponse.Content.ReadAsStringAsync(ct);
+            logger.LogError("MediaIdResponse was not success. Response {ResponseText}", responseText);
+            return;
+        }
 
-                if (jobStatus!.Status == "complete")
-                {
-                    url = jobStatus.Payload?.FirstOrDefault()?.Path;
-                    if (string.IsNullOrEmpty(url))
-                        throw new Exception("InstaUrl is null or empty");
-                    break;
-                }
+        var instaMediaIdObj = await mediaIdResponse.Content
+            .ReadFromJsonAsync(LambdaJsonContext.Default.InstagramMediaResponse, ct);
 
-                currentRetry++;
-                await Task.Delay(TimeSpan.FromSeconds(1), ct);
-            }
+        var contentUrl = instaMediaIdObj?.Data.InstagramXdt.VideoUrl;
 
-            // logger.LogInformation("URL: {Url}", url);
+        if (string.IsNullOrEmpty(contentUrl))
+        {
+            logger.LogWarning("ContentUrl is null or empty");
+            return;
+        }
 
-            using var contentResponse = await _defaultHttpClient.GetAsync(url, ct);
-            var fileName = contentResponse.Content.Headers.ContentDisposition!.FileName;
-            var ext = Path.GetExtension(fileName);
-            var isVideo = ext!.Contains("mp4");
-            await using var stream = await contentResponse.Content.ReadAsStreamAsync(ct);
+        logger.LogInformation("ContentUrl is {ContentUrl}", contentUrl);
 
-            if (isVideo)
-            {
-                await botClient.SendVideo(
-                    message.Chat.Id,
-                    stream,
-                    $"{Guid.NewGuid()}{ext}",
-                    hasSpoiler: false,
-                    disableNotification: true,
-                    replyToMessageId: message.MessageId,
-                    ct: ct);
-            }
-            else
-            {
-                await botClient.SendPhoto(
-                    message.Chat.Id,
-                    stream,
-                    $"{Guid.NewGuid()}{ext}",
-                    hasSpoiler: false,
-                    disableNotification: true,
-                    replyToMessageId: message.MessageId,
-                    ct: ct
-                );
-            }
+        using var contentResponse = await _defaultHttpClient.GetAsync(contentUrl, ct);
+        logger.LogInformation("InstaFile downloaded");
+
+        if (!contentResponse.IsSuccessStatusCode)
+        {
+            var contentResponseText = await contentResponse.Content.ReadAsStringAsync(ct);
+            logger.LogInformation("ContentResponse str. Response {ResponseText} {HttpCode}",
+                contentResponseText,
+                contentResponse.StatusCode
+            );
+        }
+
+        logger.LogInformation("ContentResponse {HttpCode}", contentResponse.StatusCode);
+
+        var contentType = contentResponse.Content.Headers.ContentType;
+        var fileExtension = MimeTypeMap.GetExtension(contentType!.MediaType);
+
+        var isVideo = fileExtension!.Contains("mp4");
+        await using var stream = await contentResponse.Content.ReadAsStreamAsync(ct);
+
+        if (isVideo)
+        {
+            await botClient.SendVideo(
+                message.Chat.Id,
+                stream,
+                $"{Guid.NewGuid()}{fileExtension}",
+                hasSpoiler: false,
+                disableNotification: true,
+                replyToMessageId: message.MessageId,
+                ct: ct);
+        }
+        else
+        {
+            await botClient.SendPhoto(
+                message.Chat.Id,
+                stream,
+                $"{Guid.NewGuid()}{fileExtension}",
+                hasSpoiler: false,
+                disableNotification: true,
+                replyToMessageId: message.MessageId,
+                ct: ct
+            );
         }
     }
 
-    private HttpRequestMessage BuildMessage(string url)
+    private static HttpRequestMessage GetMediaIdRequest(string reelsId)
     {
-        var obj = new InstaRequest
+        var nameValues = new List<KeyValuePair<string, string>>(HttpHeaders.Insta.UrlContent)
         {
-            Iphone = false,
-            Url = url,
+            HttpHeaders.Insta.GetContentPostId(reelsId)
         };
+        var encodedData = new FormUrlEncodedContent(nameValues);
 
-        var json = JsonSerializer.Serialize(obj, LambdaJsonContext.Default.InstaRequest);
-        var req = new HttpRequestMessage(HttpMethod.Post, options.Value.InstagramApiUrl + "/hooks/media")
+        var requestMessage = new HttpRequestMessage(HttpMethod.Post, "https://www.instagram.com/api/graphql")
         {
-            Content = new StringContent(json, Encoding.UTF8, MediaTypeNames.Application.Json),
+            Content = encodedData
         };
+        foreach (var (key, value) in HttpHeaders.Insta.Headers)
+            requestMessage.Headers.Add(key, value);
 
-        _defaultHttpClient.DefaultRequestHeaders.Add("Accept", "application/json, text/plain, */*");
-        _defaultHttpClient.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate, br, zstd");
-        _defaultHttpClient.DefaultRequestHeaders.Add("Accept-Language",
-            "uk-UA,uk;q=0.9,ru-UA;q=0.8,ru;q=0.7,en-US;q=0.6,en;q=0.5");
-        _defaultHttpClient.DefaultRequestHeaders.Add("If-None-Match", "W/\"71786219b00b25d7225fe65316a84acf\"");
-        _defaultHttpClient.DefaultRequestHeaders.Add("Origin", "https://publer.io");
-        _defaultHttpClient.DefaultRequestHeaders.Add("Referer", "https://publer.io/");
-        _defaultHttpClient.DefaultRequestHeaders.Add("Sec-CH-UA",
-            "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Google Chrome\";v=\"128\"");
-        _defaultHttpClient.DefaultRequestHeaders.Add("Sec-CH-UA-Mobile", "?0");
-        _defaultHttpClient.DefaultRequestHeaders.Add("Sec-CH-UA-Platform", "\"Windows\"");
-        _defaultHttpClient.DefaultRequestHeaders.Add("Sec-Fetch-Dest", "empty");
-        _defaultHttpClient.DefaultRequestHeaders.Add("Sec-Fetch-Mode", "cors");
-        _defaultHttpClient.DefaultRequestHeaders.Add("Sec-Fetch-Site", "same-site");
-        _defaultHttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36");
-
-
-        return req;
+        return requestMessage;
     }
+
+    private static string? ExtractReelId(string url)
+    {
+        var regex = MyRegex();
+        var match = regex.Match(url);
+
+        return match.Success ? match.Groups[1].Value : null;
+    }
+
+    [GeneratedRegex(@"(?:https?:\/\/(?:www\.)?instagram\.com\/(?:reels?|p)\/)([\w-]+)")]
+    private static partial Regex MyRegex();
 }

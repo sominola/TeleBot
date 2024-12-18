@@ -18,8 +18,7 @@ public static class ConfigureHttpClients
             client.BaseAddress = new Uri(baseUrl!);
         });
 
-        services.AddHttpClient("Default")
-            .ConfigurePrimaryHttpMessageHandler(x => new HttpClientHandler
+        services.AddHttpClient("Default").ConfigurePrimaryHttpMessageHandler(x => new HttpClientHandler
         {
             AutomaticDecompression = DecompressionMethods.Brotli | DecompressionMethods.GZip,
         });

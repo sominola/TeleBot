@@ -5,7 +5,7 @@ using TeleBot.TestConsole;
 
 var response = await Function.FunctionHandler(new APIGatewayProxyRequest
 {
-    Body = Constants.JsonUpdateMessage,
+    Body = File.ReadAllText("./teleMessage.json"),
 }, new MockContext());
 
 Console.WriteLine(JsonSerializer.Serialize(response));
