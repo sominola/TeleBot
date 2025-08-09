@@ -64,7 +64,7 @@ public class Function
 
         logger.LogInformation("Try deserialize body to <Message>: {Body}", body);
 
-        var updateEvent = JsonSerializer.Deserialize(body!, typeof(Update), TeleGenerationContext.Default) as Update;
+        var updateEvent = JsonSerializer.Deserialize(body, typeof(Update), TeleGenerationContext.Default) as Update;
 
         if (updateEvent?.Message is null)
         {
@@ -123,12 +123,9 @@ public class Function
 [JsonSerializable(typeof(string))]
 [JsonSerializable(typeof(TikWmResponse))]
 [JsonSerializable(typeof(TikWmData))]
-[JsonSerializable(typeof(YoutubeUrlRequest))]
-[JsonSerializable(typeof(YoutubeUrlResponse))]
 [JsonSerializable(typeof(InstagramMediaResponse))]
 [JsonSerializable(typeof(InstagramData))]
 [JsonSerializable(typeof(InstagramXdt))]
-[JsonSerializable(typeof(YoutubeSessionResponse))]
 public partial class LambdaJsonContext : JsonSerializerContext
 {
 }

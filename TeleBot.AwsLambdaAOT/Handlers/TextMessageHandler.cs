@@ -31,6 +31,6 @@ public class TextMessageHandler(
         if (handler is not null)
             await handler.Handle(botClient, message, ct);
         else
-            logger.LogInformation("No handlers for {Type}, return", MessageType.Text.ToString());
+            logger.LogInformation("No handlers for {Type}, return", nameof(MessageType.Text));
     }
 }

@@ -5,18 +5,17 @@ namespace TeleBot.AwsLambdaAOT.Responses;
 public class InstagramMediaResponse
 {
     [JsonPropertyName("data")]
-    public InstagramData Data { get; set; }
+    public InstagramData Data { get; set; } = null!;
 }
 
 public class InstagramData
 {
     [JsonPropertyName("xdt_shortcode_media")]
-    public InstagramXdt InstagramXdt { get; set; }
+    public InstagramXdt InstagramXdt { get; set; } = null!;
 }
 
 public class InstagramXdt
 {
-    
     [JsonPropertyName("video_url")]
-    public string VideoUrl { get; set; }
+    public string VideoUrl { get; set; } = null!;
 }

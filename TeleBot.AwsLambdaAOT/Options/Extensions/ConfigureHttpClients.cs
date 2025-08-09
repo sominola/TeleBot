@@ -11,13 +11,6 @@ public static class ConfigureHttpClients
         IConfiguration configuration
     )
     {
-        services.AddHttpClient("Tikwm", client =>
-        {
-            var baseUrl = configuration.GetSection($"{nameof(AppOptions)}:{nameof(AppOptions.TikWmApiUrl)}").Value;
-
-            client.BaseAddress = new Uri(baseUrl!);
-        });
-
         services.AddHttpClient("Default").ConfigurePrimaryHttpMessageHandler(x => new HttpClientHandler
         {
             AutomaticDecompression = DecompressionMethods.Brotli | DecompressionMethods.GZip,

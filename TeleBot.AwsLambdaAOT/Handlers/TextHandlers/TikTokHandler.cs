@@ -11,15 +11,15 @@ public class TikTokHandler(
     ILogger logger
 ) : IMessageHandler
 {
-    private readonly HttpClient _tikWmClient = clientFactory.CreateClient("Tikwm");
     private readonly HttpClient _defaultHttpClient = clientFactory.CreateClient("Default");
 
     public async Task Handle(ITeleBot botClient, Message message, CancellationToken ct = default)
     {
         logger.LogInformation("Processing TikTok message");
-        var query = $"?url={message.Text!}?hd=1";
+        const string baseUrl = "https://www.tikwm.com/api/";
+        var query = baseUrl + $"?url={message.Text!}?hd=1";
 
-        using var response = await _tikWmClient.GetAsync(query, ct);
+        using var response = await _defaultHttpClient.GetAsync(query, ct);
         if (response.IsSuccessStatusCode)
         {
             var result = await response.Content
@@ -43,35 +43,12 @@ public class TikTokHandler(
                     replyToMessageId: message.MessageId,
                     ct: ct);
             }
-            else if (result.Data.Images.Length != 0)
-            {
-                // var photoMedias = result.Data.Images
-                //     .Select(x => new InputMediaPhoto(new InputFileUrl(x)))
-                //     .ToList<IAlbumInputMedia>();
-                //
-                //
-                // await botClient.SendMediaGroupAsync(
-                //     message.Chat.Id,
-                //     photoMedias,
-                //     cancellationToken: ct
-                // );
-                //
-                // await botClient.SendAudioAsync(
-                //     message.Chat.Id,
-                //     new InputFileUrl(result.Data.Music),
-                //     title: result.Data.Title,
-                //     cancellationToken: ct
-                // );
-            }
         }
         else
         {
-            // var error = await response.Content.ReadAsStringAsync(ct);
-            // await botClient.SendTextMessageAsync(
-            //     message.Chat.Id,
-            //     $"Error: \n{error}",
-            //     replyToMessageId: message.MessageId,
-            //     cancellationToken: ct);
+            var responseStr = await response.Content.ReadAsStringAsync(ct);
+            logger.LogError("Error while process TikTok response: {ResponseStr}", responseStr);
+            return;
         }
     }
 }

@@ -1,14 +1,8 @@
 ﻿using System.Net.Http.Json;
-using System.Net.Mime;
-using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using MimeTypes;
 using TeleBot.AwsLambdaAOT.Extensions;
-using TeleBot.AwsLambdaAOT.Options;
-using TeleBot.AwsLambdaAOT.Responses;
 using TeleBot.Lib;
 using TeleBot.Lib.Models;
 
