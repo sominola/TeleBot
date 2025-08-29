@@ -123,9 +123,11 @@ public class Function
 [JsonSerializable(typeof(string))]
 [JsonSerializable(typeof(TikWmResponse))]
 [JsonSerializable(typeof(TikWmData))]
-[JsonSerializable(typeof(InstagramMediaResponse))]
-[JsonSerializable(typeof(InstagramData))]
-[JsonSerializable(typeof(InstagramXdt))]
+[JsonSerializable(typeof(GramPayload))]
+[JsonSerializable(typeof(GramResponse))]
+[JsonSerializable(typeof(GramMedia))]
+[JsonSerializable(typeof(GramMeta))]
+[JsonSerializable(typeof(GramComment))]
 public partial class LambdaJsonContext : JsonSerializerContext
 {
 }
