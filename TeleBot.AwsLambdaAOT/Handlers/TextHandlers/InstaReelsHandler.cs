@@ -1,46 +1,48 @@
-﻿using System.Net.Http.Json;
-using System.Text.RegularExpressions;
+﻿using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Net.Mime;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MimeTypes;
-using TeleBot.AwsLambdaAOT.Extensions;
+using TeleBot.AwsLambdaAOT.Responses;
 using TeleBot.Lib;
 using TeleBot.Lib.Models;
 
 namespace TeleBot.AwsLambdaAOT.Handlers.TextHandlers;
 
-public partial class InstaReelsHandler(
+public class InstaReelsHandler(
     IHttpClientFactory httpClientFactory,
     ILogger logger
 ) : IMessageHandler
 {
     private readonly HttpClient _defaultHttpClient = httpClientFactory.CreateClient("Default");
+    private const string IgramHostname = "api.igram.world";
+    private const string IgramKey = "aaeaf2805cea6abef3f9d2b6a666fce62fd9d612a43ab772bb50ce81455112e0";
+    private const string IgramTimestamp = "1742201548873";
+
+    private const string UserAgent = "Mozilla/5.0 (Linux; Android 10; SM-G960U) AppleWebKit/537.36 " +
+                                     "(KHTML, like Gecko) Chrome/88.0.4324.181 Mobile Safari/537.36";
 
     public async Task Handle(ITeleBot botClient, Message message, CancellationToken ct = default)
     {
         logger.LogInformation("Processing Insta message");
 
-        var reelsId = ExtractReelId(message.Text!);
-        if (string.IsNullOrEmpty(reelsId))
+        var payload = BuildGramPayload(message.Text!);
+        using var gramHttpMessage = BuildGramHttpMessage(payload);
+        using var gramResponse = await _defaultHttpClient.SendAsync(gramHttpMessage, ct);
+        if (!gramResponse.IsSuccessStatusCode)
         {
-            logger.LogWarning("ReelsId is null or empty");
+            var responseText = await gramResponse.Content.ReadAsStringAsync(ct);
+            logger.LogError("GramResponse was not success. Response {ResponseText}", responseText);
             return;
         }
 
-        logger.LogInformation("ReelsId: {reelsId}", reelsId);
+        var gramObj = await gramResponse.Content
+            .ReadFromJsonAsync(LambdaJsonContext.Default.GramResponse, ct);
 
-        using var mediaIdRequest = GetMediaIdRequest(reelsId);
-        using var mediaIdResponse = await _defaultHttpClient.SendAsync(mediaIdRequest, ct);
-        if (!mediaIdResponse.IsSuccessStatusCode)
-        {
-            var responseText = await mediaIdResponse.Content.ReadAsStringAsync(ct);
-            logger.LogError("MediaIdResponse was not success. Response {ResponseText}", responseText);
-            return;
-        }
-
-        var instaMediaIdObj = await mediaIdResponse.Content
-            .ReadFromJsonAsync(LambdaJsonContext.Default.InstagramMediaResponse, ct);
-
-        var contentUrl = instaMediaIdObj?.Data.InstagramXdt.VideoUrl;
+        var contentUrl = gramObj?.Urls.FirstOrDefault()?.Url;
 
         if (string.IsNullOrEmpty(contentUrl))
         {
@@ -50,7 +52,8 @@ public partial class InstaReelsHandler(
 
         logger.LogInformation("ContentUrl is {ContentUrl}", contentUrl);
 
-        using var contentResponse = await _defaultHttpClient.GetAsync(contentUrl, ct);
+        using var downloadMessage = BuildDownloadMessage(contentUrl);
+        using var contentResponse = await _defaultHttpClient.SendAsync(downloadMessage, ct);
         logger.LogInformation("InstaFile downloaded");
 
         if (!contentResponse.IsSuccessStatusCode)
@@ -95,32 +98,45 @@ public partial class InstaReelsHandler(
         }
     }
 
-    private static HttpRequestMessage GetMediaIdRequest(string reelsId)
+    private static HttpRequestMessage BuildDownloadMessage(string url)
     {
-        var nameValues = new List<KeyValuePair<string, string>>(HttpHeaders.Insta.UrlContent)
-        {
-            HttpHeaders.Insta.GetContentPostId(reelsId)
-        };
-        var encodedData = new FormUrlEncodedContent(nameValues);
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Accept.Clear();
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(MediaTypeNames.Application.Json));
+        request.Headers.UserAgent.ParseAdd(UserAgent);
 
-        var requestMessage = new HttpRequestMessage(HttpMethod.Post, "https://www.instagram.com/api/graphql")
-        {
-            Content = encodedData
-        };
-        foreach (var (key, value) in HttpHeaders.Insta.Headers)
-            requestMessage.Headers.Add(key, value);
-
-        return requestMessage;
+        return request;
     }
 
-    private static string? ExtractReelId(string url)
+    private HttpRequestMessage BuildGramHttpMessage(GramPayload payload)
     {
-        var regex = MyRegex();
-        var match = regex.Match(url);
+        var apiUrl = $"https://{IgramHostname}/api/convert";
+        var payloadJson = JsonSerializer.Serialize(payload, LambdaJsonContext.Default.GramPayload);
+        var request = new HttpRequestMessage(HttpMethod.Post, apiUrl);
+        request.Content = new StringContent(payloadJson, Encoding.UTF8, MediaTypeNames.Application.Json);
+        request.Headers.Accept.Clear();
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(MediaTypeNames.Application.Json));
+        request.Headers.UserAgent.ParseAdd(UserAgent);
 
-        return match.Success ? match.Groups[1].Value : null;
+        return request;
     }
 
-    [GeneratedRegex(@"(?:https?:\/\/(?:www\.)?instagram\.com\/(?:reels?|p)\/)([\w-]+)")]
-    private static partial Regex MyRegex();
+    private static GramPayload BuildGramPayload(string contentUrl)
+    {
+        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+        var hashInput = contentUrl + timestamp + IgramKey;
+        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(hashInput));
+        var secret = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+
+        var payloadObj = new GramPayload
+        {
+            Url = contentUrl,
+            Timestamp = timestamp,
+            GramTimestamp = IgramTimestamp,
+            Tsc = "0",
+            Signature = secret
+        };
+
+        return payloadObj;
+    }
 }
