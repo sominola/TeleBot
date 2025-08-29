@@ -18,7 +18,7 @@ public class TextMessageHandler(
     {
         var handlers = new List<PatternAndHandler>
         {
-            new(["https://vm.tiktok.com", "https://www.tiktok.com", "https://m.tiktok.com",], tikTokHandler),
+            new(["https://vm.tiktok.com", "https://www.tiktok.com", "https://m.tiktok.com", "https://vt.tiktok.com"], tikTokHandler),
             new(["https://www.instagram.com",], instaReelsHandler),
         };
 
