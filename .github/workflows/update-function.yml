@@ -45,7 +45,7 @@ jobs:
           aws lambda update-function-code \
             --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} \
             --zip-file fileb://function.zip \
-            --no-cli-pager
+            --no-cli-pager > /dev/null
           
           echo "Waiting 10 seconds for Lambda update to complete..."
           sleep 10
@@ -55,4 +55,4 @@ jobs:
           aws lambda update-function-configuration \
             --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} \
             --environment Variables="{AppOptions__TelegramApiKey=${{ secrets.TELEGRAM_API_KEY }}}" \
-            --no-cli-pager
+            --no-cli-pager > /dev/null
