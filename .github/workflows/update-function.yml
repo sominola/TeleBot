@@ -1,0 +1,56 @@
+﻿name: Update AWS Lambda AOT
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Publish Lambda (AOT)
+        run: |
+          dotnet publish TeleBot.AwsLambdaAOT/TeleBot.AwsLambdaAOT.csproj \
+            -c Release \
+            -r linux-x64 \
+            -p:PublishAot=true \
+            -o ./publish
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy Lambda
+        run: |
+          zip -j function.zip ./publish/* -x "*.dbg" -x "*.pdb"
+          
+          aws lambda update-function-code \
+            --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} \
+            --zip-file fileb://function.zip
+          
+          echo "Waiting 10 seconds for Lambda update to complete..."
+          sleep 10
+
+      - name: Update Lambda configuration
+        run: |
+          aws lambda update-function-configuration \
+            --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} \
+            --environment Variables="{AppOptions__TelegramApiKey=${{ secrets.TELEGRAM_API_KEY }}}"  
