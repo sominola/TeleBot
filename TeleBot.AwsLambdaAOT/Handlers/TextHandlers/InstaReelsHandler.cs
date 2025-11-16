@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Net.Mime;
 using System.Security.Cryptography;
 using System.Text;
+using System.Web;
 using Microsoft.Extensions.Logging;
 using MimeTypes;
 using TeleBot.Lib;
@@ -29,7 +30,8 @@ public class InstaReelsHandler(
     {
         logger.LogInformation("Processing Insta message");
 
-        using var gramHttpMessage = BuildGramHttpMessage(message.Text!);
+        var url = RemoveIgsh(message.Text!);
+        using var gramHttpMessage = BuildGramHttpMessage(url);
         using var gramResponse = await _defaultHttpClient.SendAsync(gramHttpMessage, ct);
         if (!gramResponse.IsSuccessStatusCode)
         {
@@ -133,5 +135,18 @@ public class InstaReelsHandler(
         request.Headers.Add("origin", "https://igram.world");
 
         return request;
+    }
+
+    private static string RemoveIgsh(string contentUrl)
+    {
+        var uri = new Uri(contentUrl);
+        var query = HttpUtility.ParseQueryString(uri.Query);
+        query.Remove("igsh");
+        var uriBuilder = new UriBuilder(uri)
+        {
+            Query = query.ToString(),
+        };
+        
+        return uriBuilder.ToString();
     }
 }
