@@ -3,10 +3,8 @@ using System.Net.Http.Json;
 using System.Net.Mime;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MimeTypes;
-using TeleBot.AwsLambdaAOT.Responses;
 using TeleBot.Lib;
 using TeleBot.Lib.Models;
 
@@ -18,19 +16,20 @@ public class InstaReelsHandler(
 ) : IMessageHandler
 {
     private readonly HttpClient _defaultHttpClient = httpClientFactory.CreateClient("Default");
-    private const string IgramHostname = "api.igram.world";
-    private const string IgramKey = "aaeaf2805cea6abef3f9d2b6a666fce62fd9d612a43ab772bb50ce81455112e0";
-    private const string IgramTimestamp = "1742201548873";
+    private const string ApiHostName = "api-wh.igram.world";
+    private const string ApiFullUrl = $"https://{ApiHostName}/api/convert";
+    private const string HexKey = "36fc819c862897305f027cda96822a071a4a01b7f46bb4ffaac9b88a649d9c28";
+    private const string Timestamp = "1763129421273";
 
-    private const string UserAgent = "Mozilla/5.0 (Linux; Android 10; SM-G960U) AppleWebKit/537.36 " +
-                                     "(KHTML, like Gecko) Chrome/88.0.4324.181 Mobile Safari/537.36";
+    private const string UserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) " +
+                                     "AppleWebKit/605.1.15 (KHTML, like Gecko) " +
+                                     "Version/17.0 Mobile/15E148 Safari/604.1";
 
     public async Task Handle(ITeleBot botClient, Message message, CancellationToken ct = default)
     {
         logger.LogInformation("Processing Insta message");
 
-        var payload = BuildGramPayload(message.Text!);
-        using var gramHttpMessage = BuildGramHttpMessage(payload);
+        using var gramHttpMessage = BuildGramHttpMessage(message.Text!);
         using var gramResponse = await _defaultHttpClient.SendAsync(gramHttpMessage, ct);
         if (!gramResponse.IsSuccessStatusCode)
         {
@@ -108,35 +107,31 @@ public class InstaReelsHandler(
         return request;
     }
 
-    private HttpRequestMessage BuildGramHttpMessage(GramPayload payload)
+    private HttpRequestMessage BuildGramHttpMessage(string contentUrl)
     {
-        var apiUrl = $"https://{IgramHostname}/api/convert";
-        var payloadJson = JsonSerializer.Serialize(payload, LambdaJsonContext.Default.GramPayload);
-        var request = new HttpRequestMessage(HttpMethod.Post, apiUrl);
-        request.Content = new StringContent(payloadJson, Encoding.UTF8, MediaTypeNames.Application.Json);
-        request.Headers.Accept.Clear();
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(MediaTypeNames.Application.Json));
-        request.Headers.UserAgent.ParseAdd(UserAgent);
+        var strTs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(contentUrl + strTs + HexKey));
+        var hexSecret = Convert.ToHexString(bytes).ToLower();
 
-        return request;
-    }
-
-    private static GramPayload BuildGramPayload(string contentUrl)
-    {
-        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-        var hashInput = contentUrl + timestamp + IgramKey;
-        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(hashInput));
-        var secret = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-
-        var payloadObj = new GramPayload
+        var dict = new Dictionary<string, string>()
         {
-            Url = contentUrl,
-            Timestamp = timestamp,
-            GramTimestamp = IgramTimestamp,
-            Tsc = "0",
-            Signature = secret
+            ["sf_url"] = contentUrl,
+            ["ts"] = strTs,
+            ["_ts"] = Timestamp,
+            ["_tsc"] = "0",
+            ["_s"] = hexSecret,
         };
 
-        return payloadObj;
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiFullUrl)
+        {
+            Content = new FormUrlEncodedContent(dict),
+        };
+
+        request.Headers.Accept.ParseAdd("*/*");
+        request.Headers.UserAgent.ParseAdd(UserAgent);
+        request.Headers.Referrer = new Uri("https://igram.world/");
+        request.Headers.Add("origin", "https://igram.world");
+
+        return request;
     }
 }
