@@ -2,33 +2,26 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>net8.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
         <AWSProjectType>Lambda</AWSProjectType>
-        <!-- This property makes the build directory similar to a publish directory and helps the AWS .NET Lambda Mock Test Tool find project dependencies. -->
-        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-        <!-- Generate Native AOT image during publishing to improve cold start time. -->
-        <PublishAot>true</PublishAot>
-        <!-- StripSymbols tells the compiler to strip debugging symbols from the final executable if we're on Linux and put them into their own file. 
-        This will greatly reduce the final executable's size.-->
-        <StripSymbols>true</StripSymbols>
-        <!-- TrimMode partial will only trim assemblies marked as trimmable. To reduce package size make all assemblies trimmable and set TrimMode to full.
-        If there are trim warnings during build, you can hit errors at runtime.-->
-        <TrimMode>full</TrimMode>
 
+        <PublishAot>true</PublishAot>
+        <StripSymbols>true</StripSymbols>
+        <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
 
         <EnableMicrosoftExtensionsConfigurationBinderSourceGenerator>true</EnableMicrosoftExtensionsConfigurationBinderSourceGenerator>
-        <!-- 👇 Enable generator in Preview 4+-->
         <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.13.1" />
-        <PackageReference Include="Amazon.Lambda.Core" Version="2.7.0" />
+        <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.14.0" />
+        <PackageReference Include="Amazon.Lambda.Core" Version="2.8.0" />
         <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4" />
-        <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.1" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.8" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.8" />
-        <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+        <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.2" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
         <PackageReference Include="MimeTypeMapOfficial" Version="1.0.17"/>
     </ItemGroup>
     <ItemGroup>
