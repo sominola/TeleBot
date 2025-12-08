@@ -129,6 +129,11 @@ public class Function
 [JsonSerializable(typeof(GramMedia))]
 [JsonSerializable(typeof(GramMeta))]
 [JsonSerializable(typeof(GramComment))]
+[JsonSerializable(typeof(DeepSeekRequest))]
+[JsonSerializable(typeof(DeepSeekMessage))]
+[JsonSerializable(typeof(DeepSeekResponse))]
+[JsonSerializable(typeof(DeepSeekChoice))]
+[JsonSerializable(typeof(DeepSeekUsage))]
 public partial class LambdaJsonContext : JsonSerializerContext
 {
 }

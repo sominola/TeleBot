@@ -8,8 +8,10 @@ namespace TeleBot.Lib.Extensions;
 [JsonSerializable(typeof(TeleUser))]
 [JsonSerializable(typeof(TeleResult))]
 [JsonSerializable(typeof(Message))]
+[JsonSerializable(typeof(MessageEntity))]
 [JsonSerializable(typeof(Document))]
 [JsonSerializable(typeof(Chat))]
+[JsonSerializable(typeof(Dictionary<string, string>))]
 public partial class TeleGenerationContext : JsonSerializerContext
 {
 }
