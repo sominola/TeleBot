@@ -56,7 +56,7 @@ jobs:
             --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} \
             --environment Variables="{
               AppOptions__TelegramApiKey=${{ secrets.TELEGRAM_API_KEY }},
-              AppOptions__DeepSeekApiKey=${{ secrets.DEESEEK_API_KEY }},
+              AppOptions__DeepSeekApiKey=${{ secrets.DEEPSEEK_API_KEY }},
               AppOptions__TelegramBotName=${{ secrets.TELEGRAM_BOT_NAME }}
             }" \
             --no-cli-pager > /dev/null
