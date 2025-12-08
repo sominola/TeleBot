@@ -53,6 +53,10 @@ jobs:
       - name: Update Lambda configuration
         run: |
           aws lambda update-function-configuration \
-            --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} \
-            --environment Variables="{AppOptions__TelegramApiKey=${{ secrets.TELEGRAM_API_KEY }}}" \
-            --no-cli-pager > /dev/null
+      --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} \
+      --environment Variables='{
+      "AppOptions__TelegramApiKey": "${{ secrets.TELEGRAM_API_KEY }}",
+      "AppOptions__DeepSeekApiKey": "${{ secrets.DEEPSEEK_API_KEY }}",
+      "AppOptions__TelegramBotName": "${{ secrets.TELEGRAM_BOT_NAME }}"
+    }' \
+      --no-cli-pager > /dev/null

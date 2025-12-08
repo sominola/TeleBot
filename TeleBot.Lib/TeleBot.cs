@@ -23,6 +23,13 @@ public interface ITeleBot
         bool? disableNotification = default,
         int? replyToMessageId = default,
         CancellationToken ct = default);
+
+    Task<TeleResult> SendMessage(
+        long chatId,
+        string text,
+        bool? disableNotification = default,
+        int? replyToMessageId = default,
+        CancellationToken ct = default);
 }
 
 public class TeleBot : ITeleBot
@@ -81,5 +88,26 @@ public class TeleBot : ITeleBot
         var file = new ValueTuple<Stream, string, string>(videoUrl, fileName, "video");
 
         return await _teleClient.PostMultipartContent<TeleResult>("sendVideo", keys, file, ct);
+    }
+
+    public async Task<TeleResult> SendMessage(
+        long chatId,
+        string text,
+        bool? disableNotification = default,
+        int? replyToMessageId = default,
+        CancellationToken ct = default
+    )
+    {
+        var keys = new Dictionary<string, string>
+        {
+            { "chat_id", chatId.ToString() },
+            { "text", text },
+            { "disable_notification", disableNotification.GetValueOrDefault().ToString() }
+        };
+
+        if (replyToMessageId.HasValue)
+            keys.Add("reply_to_message_id", replyToMessageId.Value.ToString());
+
+        return await _teleClient.Post<Dictionary<string, string>, TeleResult>("sendMessage", keys, ct);
     }
 }

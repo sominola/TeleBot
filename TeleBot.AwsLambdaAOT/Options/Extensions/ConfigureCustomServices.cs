@@ -11,6 +11,7 @@ public static class ConfigureCustomServices
         services.AddScoped<TextMessageHandler>();
         services.AddScoped<InstaReelsHandler>();
         services.AddScoped<TikTokHandler>();
+        services.AddScoped<DeepSeekHandler>();
 
         return services;
     }
