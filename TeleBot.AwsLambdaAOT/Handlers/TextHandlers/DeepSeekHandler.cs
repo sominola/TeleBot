@@ -14,7 +14,8 @@ public class DeepSeekHandler : IMessageHandler
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger _logger;
-
+    private const int TelegramMaxLength = 4096;
+    
     public DeepSeekHandler(IHttpClientFactory httpClientFactory, ILogger logger, IOptions<AppOptions> options)
     {
         _httpClient = httpClientFactory.CreateClient("Default");
@@ -35,7 +36,7 @@ public class DeepSeekHandler : IMessageHandler
             {
                 Model = "deepseek-chat",
                 Messages = [new DeepSeekMessage { Role = "user", Content = message.Text! }],
-                MaxTokens = 1024,
+                MaxTokens = 2048,
                 Temperature = 0.7
             };
 
@@ -54,12 +55,16 @@ public class DeepSeekHandler : IMessageHandler
                 return;
             }
 
-            await botClient.SendMessage(
-                message.Chat.Id,
-                answer,
-                replyToMessageId: message.MessageId,
-                ct: ct
-            );
+            for (int i = 0; i < answer.Length; i += TelegramMaxLength)
+            {
+                var chunk = answer.Substring(i, Math.Min(TelegramMaxLength, answer.Length - i));
+                await botClient.SendMessage(
+                    message.Chat.Id,
+                    chunk,
+                    replyToMessageId: message.MessageId,
+                    ct: ct
+                );
+            }
 
             _logger.LogInformation("DeepSeek response sent");
         }
