@@ -36,7 +36,7 @@ public class DeepSeekHandler : IMessageHandler
             {
                 Model = "deepseek-chat",
                 Messages = [new DeepSeekMessage { Role = "user", Content = message.Text! }],
-                MaxTokens = 2048,
+                MaxTokens = 512,
                 Temperature = 0.7
             };
 
