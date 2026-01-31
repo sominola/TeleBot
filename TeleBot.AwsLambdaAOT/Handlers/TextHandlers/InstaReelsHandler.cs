@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Net.Mime;
 using System.Security.Cryptography;
@@ -19,12 +20,12 @@ public class InstaReelsHandler(
     private readonly HttpClient _defaultHttpClient = httpClientFactory.CreateClient("Default");
     private const string ApiHostName = "api-wh.igram.world";
     private const string ApiFullUrl = $"https://{ApiHostName}/api/convert";
-    private const string HexKey = "241c28282e4ce419ce73ca61555a5a0c7faf887c5ccf9305c55484f701ba883a";
-    private const string Timestamp = "1766415734394";
+    private const string HexKey = "cc21045632466ed6e36cb31fd615ccbe4ca52c90cb550412551e417af5d0b1ba";
+    private const string Timestamp = "1769594285327";
 
-    private const string UserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) " +
-                                     "AppleWebKit/605.1.15 (KHTML, like Gecko) " +
-                                     "Version/17.0 Mobile/15E148 Safari/604.1";
+    private const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                                     "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                                     "Chrome/144.0.0.0 Safari/537.36";
 
     public async Task Handle(ITeleBot botClient, Message message, CancellationToken ct = default)
     {
@@ -128,6 +129,9 @@ public class InstaReelsHandler(
         {
             Content = new FormUrlEncodedContent(dict),
         };
+        
+        request.Version = HttpVersion.Version30;
+        request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
         request.Headers.Accept.ParseAdd("*/*");
         request.Headers.UserAgent.ParseAdd(UserAgent);
