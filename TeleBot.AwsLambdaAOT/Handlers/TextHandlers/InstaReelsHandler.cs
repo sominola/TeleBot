@@ -34,6 +34,8 @@ public class InstaReelsHandler(
         var url = RemoveIgsh(message.Text!);
         using var gramHttpMessage = BuildGramHttpMessage(url);
         using var gramResponse = await _defaultHttpClient.SendAsync(gramHttpMessage, ct);
+        
+        logger.LogInformation("Version response: {HttpVersion}", gramResponse.Version);
         if (!gramResponse.IsSuccessStatusCode)
         {
             var responseText = await gramResponse.Content.ReadAsStringAsync(ct);
