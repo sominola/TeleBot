@@ -12,8 +12,6 @@
 
         <EnableMicrosoftExtensionsConfigurationBinderSourceGenerator>true</EnableMicrosoftExtensionsConfigurationBinderSourceGenerator>
         <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
-
-        <Http3Support>true</Http3Support>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.14.1" />

@@ -128,10 +128,9 @@ public class InstaReelsHandler(
         var request = new HttpRequestMessage(HttpMethod.Post, ApiFullUrl)
         {
             Content = new FormUrlEncodedContent(dict),
+            Version = HttpVersion.Version20,
+            VersionPolicy = HttpVersionPolicy.RequestVersionOrLower,
         };
-        
-        request.Version = HttpVersion.Version30;
-        request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
         request.Headers.Accept.ParseAdd("*/*");
         request.Headers.UserAgent.ParseAdd(UserAgent);
@@ -150,7 +149,7 @@ public class InstaReelsHandler(
         {
             Query = query.ToString(),
         };
-        
+
         return uriBuilder.ToString();
     }
 }
