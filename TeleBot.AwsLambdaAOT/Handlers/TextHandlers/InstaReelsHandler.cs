@@ -129,7 +129,7 @@ public class InstaReelsHandler(
         {
             Content = new FormUrlEncodedContent(dict),
             Version = HttpVersion.Version20,
-            VersionPolicy = HttpVersionPolicy.RequestVersionOrLower,
+            VersionPolicy = HttpVersionPolicy.RequestVersionExact,
         };
 
         request.Headers.Accept.ParseAdd("*/*");
