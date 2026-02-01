@@ -18,10 +18,10 @@ public class InstaReelsHandler(
 ) : IMessageHandler
 {
     private readonly HttpClient _defaultHttpClient = httpClientFactory.CreateClient("Default");
-    private const string ApiHostName = "api-wh.igram.world";
+    private const string ApiHostName = "api-wh.fastdl.app";
     private const string ApiFullUrl = $"https://{ApiHostName}/api/convert";
-    private const string HexKey = "cc21045632466ed6e36cb31fd615ccbe4ca52c90cb550412551e417af5d0b1ba";
-    private const string Timestamp = "1769594285327";
+    private const string HexKey = "970514c817fe374ff071f0ef8ba229fcc3fae9541126c5763161eac4668b7a55";
+    private const string Timestamp = "1769592795476";
 
     private const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                                      "AppleWebKit/537.36 (KHTML, like Gecko) " +
