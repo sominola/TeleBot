@@ -2,31 +2,13 @@
 
 namespace TeleBot.AwsLambdaAOT.Responses;
 
-public class GramPayload
+public class InstaResponse
 {
     [JsonPropertyName("url")]
-    public string Url { get; set; } = null!;
-
-    [JsonPropertyName("ts")]
-    public string Timestamp { get; set; } = null!;
-
-    [JsonPropertyName("_ts")]
-    public string GramTimestamp { get; set; } = null!;
-
-    [JsonPropertyName("_tsc")]
-    public string Tsc { get; set; } = null!;
-
-    [JsonPropertyName("_s")]
-    public string Signature { get; set; } = null!;
-}
-
-public class GramResponse
-{
-    [JsonPropertyName("url")]
-    public List<GramMedia> Urls { get; set; } = null!;
+    public List<InstaGramMedia> Urls { get; set; } = null!;
 
     [JsonPropertyName("meta")]
-    public GramMeta Meta { get; set; } = null!;
+    public InstaMeta Meta { get; set; } = null!;
 
     [JsonPropertyName("thumb")]
     public string Thumb { get; set; } = null!;
@@ -44,7 +26,7 @@ public class GramResponse
     public long Timestamp { get; set; }
 }
 
-public class GramMedia
+public class InstaGramMedia
 {
     [JsonPropertyName("url")]
     public string Url { get; set; } = null!;
@@ -59,7 +41,7 @@ public class GramMedia
     public string Ext { get; set; } = null!;
 }
 
-public class GramMeta
+public class InstaMeta
 {
     [JsonPropertyName("title")]
     public string Title { get; set; } = null!;
@@ -71,7 +53,7 @@ public class GramMeta
     public string Shortcode { get; set; } = null!;
 
     [JsonPropertyName("comments")]
-    public List<GramComment> Comments { get; set; } = null!;
+    public List<InstaComment> Comments { get; set; } = null!;
 
     [JsonPropertyName("comment_count")]
     public int CommentCount { get; set; }
@@ -86,7 +68,7 @@ public class GramMeta
     public string Username { get; set; } = null!;
 }
 
-public class GramComment
+public class InstaComment
 {
     [JsonPropertyName("text")]
     public string Text { get; set; } = null!;
