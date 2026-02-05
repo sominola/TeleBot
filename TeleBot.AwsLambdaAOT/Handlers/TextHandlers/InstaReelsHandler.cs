@@ -18,14 +18,7 @@ public class InstaReelsHandler(
 ) : IMessageHandler
 {
     private readonly HttpClient _defaultHttpClient = httpClientFactory.CreateClient("Default");
-    private const string MainHostName = "fastdl.app";
-    private const string ApiHostName = $"api-wh.{MainHostName}";
-    private const string ApiFullUrl = $"https://{ApiHostName}/api/convert";
-    private const string HexKey = "970514c817fe374ff071f0ef8ba229fcc3fae9541126c5763161eac4668b7a55";
-    private const string Timestamp = "1769592795476";
-    private const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                                     "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                                     "Chrome/144.0.0.0 Safari/537.36";
+    private const string UserAgent = "Telegram/31192 CFNetwork/1492.0.1 Darwin/23.3.0";
 
     public async Task Handle(ITeleBot botClient, Message message, CancellationToken ct = default)
     {
@@ -33,31 +26,7 @@ public class InstaReelsHandler(
 
         var url = RemoveIgsh(message.Text!);
         using var instaHttpMessage = BuildHttpMessage(url);
-        using var instaRepsonse = await _defaultHttpClient.SendAsync(instaHttpMessage, ct);
-
-        logger.LogInformation("Version response: {HttpVersion}", instaRepsonse.Version);
-        if (!instaRepsonse.IsSuccessStatusCode)
-        {
-            var responseText = await instaRepsonse.Content.ReadAsStringAsync(ct);
-            logger.LogError("InstaResponse was not success. Response {ResponseText}", responseText);
-            return;
-        }
-
-        var instaObj = await instaRepsonse.Content
-            .ReadFromJsonAsync(LambdaJsonContext.Default.InstaResponse, ct);
-
-        var contentUrl = instaObj?.Urls.FirstOrDefault()?.Url;
-
-        if (string.IsNullOrEmpty(contentUrl))
-        {
-            logger.LogWarning("ContentUrl is null or empty");
-            return;
-        }
-
-        logger.LogInformation("ContentUrl is {ContentUrl}", contentUrl);
-
-        using var downloadMessage = BuildDownloadMessage(contentUrl);
-        using var contentResponse = await _defaultHttpClient.SendAsync(downloadMessage, ct);
+        using var contentResponse = await _defaultHttpClient.SendAsync(instaHttpMessage, ct);
         logger.LogInformation("InstaFile downloaded");
 
         if (!contentResponse.IsSuccessStatusCode)
@@ -74,7 +43,17 @@ public class InstaReelsHandler(
         var contentType = contentResponse.Content.Headers.ContentType;
         var fileExtension = MimeTypeMap.GetExtension(contentType!.MediaType);
 
-        var isVideo = fileExtension!.Contains("mp4");
+        var isVideo = fileExtension is
+            ".mp4" or ".webm" or ".mov" or ".mkv" or ".avi" or ".3gp" or ".m4v";
+        var isPhoto = fileExtension is
+            ".jpg" or ".jpeg" or ".png" or ".webp" or ".bmp" or ".gif" or ".tiff" or ".heic";
+
+        if (!isVideo && !isPhoto)
+        {
+            logger.LogWarning("Unprocessable content type. ContentType: {ContentType}", contentType);
+            return;
+        }
+
         await using var stream = await contentResponse.Content.ReadAsStreamAsync(ct);
 
         if (isVideo)
@@ -88,7 +67,7 @@ public class InstaReelsHandler(
                 replyToMessageId: message.MessageId,
                 ct: ct);
         }
-        else
+        else if (isPhoto)
         {
             await botClient.SendPhoto(
                 message.Chat.Id,
@@ -102,52 +81,11 @@ public class InstaReelsHandler(
         }
     }
 
-    private static HttpRequestMessage BuildDownloadMessage(string url)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Accept.Clear();
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(MediaTypeNames.Application.Json));
-        request.Headers.UserAgent.ParseAdd(UserAgent);
-
-        return request;
-    }
-
     private HttpRequestMessage BuildHttpMessage(string contentUrl)
     {
-        var strTs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(contentUrl + strTs + HexKey));
-        var hexSecret = Convert.ToHexString(bytes).ToLower();
-
-        var dict = new Dictionary<string, string>()
-        {
-            ["sf_url"] = contentUrl,
-            ["ts"] = strTs,
-            ["_ts"] = Timestamp,
-            ["_tsc"] = "0",
-            ["_s"] = hexSecret,
-        };
-
-        var request = new HttpRequestMessage(HttpMethod.Post, ApiFullUrl)
-        {
-            Content = new FormUrlEncodedContent(dict),
-            Version = HttpVersion.Version20,
-            VersionPolicy = HttpVersionPolicy.RequestVersionExact,
-        };
-
-        request.Headers.Accept.ParseAdd("application/json, text/plain, */*");
-        request.Headers.AcceptLanguage.ParseAdd("uk-UA,uk;q=0.9,ru-UA;q=0.8,ru;q=0.7,en-US;q=0.6,en;q=0.5");
+        var url = contentUrl.Replace("https://www.instagram.com", "https://www.kkinstagram.com");
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.UserAgent.ParseAdd(UserAgent);
-        request.Headers.Referrer = new Uri($"https://{MainHostName}/");
-        request.Headers.Add("origin", $"https://{MainHostName}");
-
-        request.Headers.Add("priority", "u=1, i");
-        request.Headers.Add("sec-ch-ua",
-            "\"Not(A:Brand\";v=\"8\", \"Chromium\";v=\"144\", \"Google Chrome\";v=\"144\"");
-        request.Headers.Add("sec-ch-ua-mobile", "?0");
-        request.Headers.Add("sec-ch-ua-platform", "\"Windows\"");
-        request.Headers.Add("sec-fetch-dest", "empty");
-        request.Headers.Add("sec-fetch-mode", "cors");
-        request.Headers.Add("sec-fetch-site", "same-site");
 
         return request;
     }
