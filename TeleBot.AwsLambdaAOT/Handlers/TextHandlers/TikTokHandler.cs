@@ -8,7 +8,7 @@ namespace TeleBot.AwsLambdaAOT.Handlers.TextHandlers;
 
 public class TikTokHandler(
     IHttpClientFactory clientFactory,
-    ILogger logger
+    ILogger<TikTokHandler> logger
 ) : IMessageHandler
 {
     private readonly HttpClient _defaultHttpClient = clientFactory.CreateClient("Default");
@@ -48,7 +48,6 @@ public class TikTokHandler(
         {
             var responseStr = await response.Content.ReadAsStringAsync(ct);
             logger.LogError("Error while process TikTok response: {ResponseStr}", responseStr);
-            return;
         }
     }
 }

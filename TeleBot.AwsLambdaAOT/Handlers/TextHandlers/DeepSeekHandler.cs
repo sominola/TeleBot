@@ -13,10 +13,10 @@ namespace TeleBot.AwsLambdaAOT.Handlers.TextHandlers;
 public class DeepSeekHandler : IMessageHandler
 {
     private readonly HttpClient _httpClient;
-    private readonly ILogger _logger;
+    private readonly ILogger<DeepSeekHandler> _logger;
     private const int TelegramMaxLength = 4096;
     
-    public DeepSeekHandler(IHttpClientFactory httpClientFactory, ILogger logger, IOptions<AppOptions> options)
+    public DeepSeekHandler(IHttpClientFactory httpClientFactory, ILogger<DeepSeekHandler> logger, IOptions<AppOptions> options)
     {
         _httpClient = httpClientFactory.CreateClient("Default");
         _httpClient.BaseAddress = new Uri("https://api.deepseek.com");

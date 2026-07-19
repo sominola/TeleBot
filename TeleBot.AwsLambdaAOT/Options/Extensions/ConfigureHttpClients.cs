@@ -11,10 +11,15 @@ public static class ConfigureHttpClients
         IConfiguration configuration
     )
     {
-        services.AddHttpClient("Default").ConfigurePrimaryHttpMessageHandler(x => new HttpClientHandler
-        {
-            AutomaticDecompression = DecompressionMethods.Brotli | DecompressionMethods.GZip,
-        });
+        services
+            .AddHttpClient("Default", client => { client.Timeout = TimeSpan.FromSeconds(15); })
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+                {
+                    AutomaticDecompression = DecompressionMethods.Brotli | DecompressionMethods.GZip,
+                }
+            );
+
+        services.AddHttpClient("Telegram", client => { client.Timeout = TimeSpan.FromSeconds(15); });
 
         return services;
     }

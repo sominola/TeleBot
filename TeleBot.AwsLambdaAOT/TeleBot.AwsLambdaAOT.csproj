@@ -14,13 +14,13 @@
         <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.14.1" />
-        <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.5" />
-        <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.3" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.2" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.2" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2" />
-        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.2" />
+        <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="2.1.2" />
+        <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="3.0.0" />
+        <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="3.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.10" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.10" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10" />
         <PackageReference Include="MimeTypeMapOfficial" Version="1.0.17"/>
     </ItemGroup>
     <ItemGroup>

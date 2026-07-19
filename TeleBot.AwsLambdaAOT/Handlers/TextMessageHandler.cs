@@ -8,7 +8,7 @@ using TeleBot.Lib.Models.Enums;
 
 namespace TeleBot.AwsLambdaAOT.Handlers;
 
-public record PatternAndHandler(HashSet<string> Patterns, IMessageHandler Handler);
+public record HostsAndHandler(string[] Hosts, IMessageHandler Handler);
 
 public class TextMessageHandler(
     InstaReelsHandler instaReelsHandler,
@@ -22,17 +22,24 @@ public class TextMessageHandler(
     {
         if (await CheckAndProcessDeepSeekMessage(botClient, message, ct)) return;
 
-        var handlers = new List<PatternAndHandler>
+        var handlers = new List<HostsAndHandler>
         {
-            new(["https://vm.tiktok.com", "https://www.tiktok.com", "https://m.tiktok.com", "https://vt.tiktok.com"],
+            new(["vm.tiktok.com", "www.tiktok.com", "m.tiktok.com", "vt.tiktok.com"],
                 tikTokHandler),
-            new(["https://www.instagram.com",], instaReelsHandler),
+            new(["www.instagram.com"], instaReelsHandler),
         };
 
-        var handler = handlers.Where(x => x.Patterns
-                .Any(y => message.Text!.StartsWith(y, StringComparison.OrdinalIgnoreCase)))
-            .Select(x => x.Handler)
-            .FirstOrDefault();
+        IMessageHandler? handler = null;
+        if (Uri.TryCreate(message.Text, UriKind.Absolute, out var uri) &&
+            uri.Scheme == Uri.UriSchemeHttps &&
+            string.IsNullOrEmpty(uri.UserInfo))
+        {
+            handler = handlers
+                .FirstOrDefault(candidate => candidate.Hosts.Contains(
+                    uri.Host,
+                    StringComparer.OrdinalIgnoreCase))
+                ?.Handler;
+        }
 
         if (handler is not null)
             await handler.Handle(botClient, message, ct);

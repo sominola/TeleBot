@@ -2,7 +2,7 @@
 
 namespace TeleBot.Lib;
 
-public interface ITeleBot
+public interface ITeleBot : IDisposable
 {
     Task<TeleResult> GetMe(CancellationToken ct = default);
 
@@ -32,14 +32,14 @@ public interface ITeleBot
         CancellationToken ct = default);
 }
 
-public class TeleBot : ITeleBot
+public sealed class TeleBot : ITeleBot
 {
     private const string BaseAddress = "https://api.telegram.org/bot";
     private readonly TeleClient _teleClient;
 
-    public TeleBot(string token)
+    public TeleBot(HttpClient httpClient, string token)
     {
-        _teleClient = new TeleClient(BaseAddress, token);
+        _teleClient = new TeleClient(httpClient, BaseAddress, token);
     }
 
     public async Task<TeleResult> GetMe(CancellationToken ct = default) =>
@@ -110,4 +110,6 @@ public class TeleBot : ITeleBot
 
         return await _teleClient.Post<Dictionary<string, string>, TeleResult>("sendMessage", keys, ct);
     }
+
+    public void Dispose() => _teleClient.Dispose();
 }

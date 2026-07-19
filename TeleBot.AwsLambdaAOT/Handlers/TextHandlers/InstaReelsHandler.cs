@@ -1,10 +1,4 @@
-﻿using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Net.Mime;
-using System.Security.Cryptography;
-using System.Text;
-using System.Web;
+﻿using System.Web;
 using Microsoft.Extensions.Logging;
 using MimeTypes;
 using TeleBot.Lib;
@@ -14,7 +8,7 @@ namespace TeleBot.AwsLambdaAOT.Handlers.TextHandlers;
 
 public class InstaReelsHandler(
     IHttpClientFactory httpClientFactory,
-    ILogger logger
+    ILogger<InstaReelsHandler> logger
 ) : IMessageHandler
 {
     private readonly HttpClient _defaultHttpClient = httpClientFactory.CreateClient("Default");
@@ -24,8 +18,7 @@ public class InstaReelsHandler(
     {
         logger.LogInformation("Processing Insta message");
 
-        var url = RemoveIgsh(message.Text!);
-        using var instaHttpMessage = BuildHttpMessage(url);
+        using var instaHttpMessage = BuildHttpMessage(message.Text!);
         using var contentResponse = await _defaultHttpClient.SendAsync(instaHttpMessage, ct);
         logger.LogInformation("InstaFile downloaded");
 
@@ -36,6 +29,7 @@ public class InstaReelsHandler(
                 contentResponseText,
                 contentResponse.StatusCode
             );
+            return;
         }
 
         logger.LogInformation("ContentResponse {HttpCode}", contentResponse.StatusCode);
@@ -81,25 +75,29 @@ public class InstaReelsHandler(
         }
     }
 
-    private HttpRequestMessage BuildHttpMessage(string contentUrl)
+    private static HttpRequestMessage BuildHttpMessage(string contentUrl)
     {
-        var url = contentUrl.Replace("https://www.instagram.com", "https://www.kkinstagram.com");
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.UserAgent.ParseAdd(UserAgent);
+        if (!Uri.TryCreate(contentUrl, UriKind.Absolute, out var uri) ||
+            uri.Scheme != Uri.UriSchemeHttps ||
+            !string.Equals(uri.Host, "www.instagram.com", StringComparison.OrdinalIgnoreCase) ||
+            !string.IsNullOrEmpty(uri.UserInfo))
+        {
+            throw new ArgumentException("Invalid Instagram URL.", nameof(contentUrl));
+        }
 
-        return request;
-    }
-
-    private static string RemoveIgsh(string contentUrl)
-    {
-        var uri = new Uri(contentUrl);
         var query = HttpUtility.ParseQueryString(uri.Query);
         query.Remove("igsh");
+
         var uriBuilder = new UriBuilder(uri)
         {
+            Host = "www.kkinstagram.com",
+            Port = -1,
             Query = query.ToString(),
         };
 
-        return uriBuilder.ToString();
+        var request = new HttpRequestMessage(HttpMethod.Get, uriBuilder.Uri);
+        request.Headers.UserAgent.ParseAdd(UserAgent);
+
+        return request;
     }
 }

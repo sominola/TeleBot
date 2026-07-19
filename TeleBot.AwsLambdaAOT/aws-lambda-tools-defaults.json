@@ -5,7 +5,7 @@
   "profile": "default",
   "region": "eu-west-3",
   "configuration": "Release",
-  "function-runtime": "dotnet8",
+  "function-runtime": "dotnet10",
   "function-memory-size": 128,
   "function-timeout": 15,
   "function-handler": "TeleBot.AwsLambdaAOT",

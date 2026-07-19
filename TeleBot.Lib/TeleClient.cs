@@ -24,8 +24,10 @@ public class TeleClient : ITeleClient
     private readonly string _baseAddress;
     private bool _disposed;
 
-    public TeleClient(string baseUrl, string token)
+    public TeleClient(HttpClient httpClient, string baseUrl, string token)
     {
+        ArgumentNullException.ThrowIfNull(httpClient);
+
         if (string.IsNullOrEmpty(baseUrl))
             throw new ArgumentNullException(nameof(baseUrl));
 
@@ -33,8 +35,7 @@ public class TeleClient : ITeleClient
             throw new ArgumentNullException(nameof(token));
 
         _baseAddress = baseUrl + token + "/";
-
-        _httpClient = new HttpClient();
+        _httpClient = httpClient;
     }
 
     public async Task<TRes> PostMultipartContent<TRes>(
@@ -51,7 +52,7 @@ public class TeleClient : ITeleClient
 
         content.Add(new StreamContent(file.stream), file.key, file.fileName);
 
-        var response = await _httpClient.PostAsync(_baseAddress + teleMethod, content, ct);
+        using var response = await _httpClient.PostAsync(_baseAddress + teleMethod, content, ct);
         if (response.IsSuccessStatusCode)
         {
             var deserialized = await response.Content
