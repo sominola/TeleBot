@@ -12,14 +12,14 @@ public static class ConfigureHttpClients
     )
     {
         services
-            .AddHttpClient("Default", client => { client.Timeout = TimeSpan.FromSeconds(15); })
+            .AddHttpClient("Default", client => { client.Timeout = TimeSpan.FromSeconds(30); })
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
                 {
                     AutomaticDecompression = DecompressionMethods.Brotli | DecompressionMethods.GZip,
                 }
             );
 
-        services.AddHttpClient("Telegram", client => { client.Timeout = TimeSpan.FromSeconds(15); });
+        services.AddHttpClient("Telegram", client => { client.Timeout = TimeSpan.FromSeconds(30); });
 
         return services;
     }
