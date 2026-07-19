@@ -14,6 +14,7 @@ public static class ConfigureCustomServices
         services.AddScoped<InstaReelsHandler>();
         services.AddScoped<TikTokHandler>();
         services.AddScoped<DeepSeekHandler>();
+        services.AddScoped<MediaStreamService>();
         services.AddScoped<ITeleBot>(serviceProvider =>
         {
             var httpClient = serviceProvider

@@ -1,6 +1,5 @@
 ﻿using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
-using MimeTypes;
 using TeleBot.Lib;
 using TeleBot.Lib.Models;
 
@@ -8,6 +7,7 @@ namespace TeleBot.AwsLambdaAOT.Handlers.TextHandlers;
 
 public class TikTokHandler(
     IHttpClientFactory clientFactory,
+    MediaStreamService mediaStreamService,
     ILogger<TikTokHandler> logger
 ) : IMessageHandler
 {
@@ -17,7 +17,7 @@ public class TikTokHandler(
     {
         logger.LogInformation("Processing TikTok message");
         const string baseUrl = "https://www.tikwm.com/api/";
-        var query = baseUrl + $"?url={message.Text!}?hd=1";
+        var query = $"{baseUrl}?url={Uri.EscapeDataString(message.Text!)}&hd=1";
 
         using var response = await _defaultHttpClient.GetAsync(query, ct);
         if (response.IsSuccessStatusCode)
@@ -29,19 +29,28 @@ public class TikTokHandler(
 
             if (result.Data.Duration.HasValue && result.Data.Duration > 0)
             {
-                var videoUrl = result.Data.Play;
-                using var videoResponse = await _defaultHttpClient.GetAsync(videoUrl, ct);
-                var videoExtension = MimeTypeMap.GetExtension(videoResponse.Content.Headers.ContentType!.MediaType);
-                await using var videoStream = await videoResponse.Content.ReadAsStreamAsync(ct);
+                await using var media = await mediaStreamService.Get(result.Data.Play, ct);
 
-                await botClient.SendVideo(
-                    message.Chat.Id,
-                    videoStream,
-                    $"{Guid.NewGuid()}{videoExtension}",
-                    hasSpoiler: false,
-                    disableNotification: true,
-                    replyToMessageId: message.MessageId,
-                    ct: ct);
+                if (media.Type == MediaType.Video)
+                {
+                    await botClient.SendVideo(
+                        message.Chat.Id,
+                        media.Stream,
+                        $"{Guid.NewGuid()}{media.Extension}",
+                        disableNotification: true,
+                        replyToMessageId: message.MessageId,
+                        ct: ct);
+                }
+                else
+                {
+                    await botClient.SendPhoto(
+                        message.Chat.Id,
+                        media.Stream,
+                        $"{Guid.NewGuid()}{media.Extension}",
+                        disableNotification: true,
+                        replyToMessageId: message.MessageId,
+                        ct: ct);
+                }
             }
         }
         else
@@ -50,4 +59,5 @@ public class TikTokHandler(
             logger.LogError("Error while process TikTok response: {ResponseStr}", responseStr);
         }
     }
+
 }
