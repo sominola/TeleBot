@@ -32,7 +32,7 @@ public sealed class MediaStreamResult(
 
 public sealed class MediaStreamService(IHttpClientFactory httpClientFactory)
 {
-    private const long MaxVideoSizeBytes = 75L * 1024 * 1024;
+    private const long MaxVideoSizeBytes = 50L * 1024 * 1024;
     private const string UserAgent = "Telegram/31192 CFNetwork/1492.0.1 Darwin/23.3.0";
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient("Default");
 
