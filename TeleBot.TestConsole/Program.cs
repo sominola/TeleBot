@@ -8,7 +8,7 @@ var response = await Function.FunctionHandler(new APIGatewayProxyRequest
 {
     Headers = new Dictionary<string, string>
     {
-        { "X-Telegram-Bot-ApiKey", "" },
+        { "X-Telegram-Bot-Api-Secret-Token", "" },
     },
     Body = File.ReadAllText("./teleMessage.json"),
 }, new MockContext());

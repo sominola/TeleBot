@@ -23,7 +23,7 @@ namespace TeleBot.AwsLambdaAOT;
 
 public class Function
 {
-    private const string TelegramApiKeyHeader = "X-Telegram-Bot-ApiKey";
+    private const string TelegramApiKeyHeader = "X-Telegram-Bot-Api-Secret-Token";
     private static readonly Lazy<ServiceProvider> LambdaServices = new(InitLambda);
 
     private static async Task Main()
